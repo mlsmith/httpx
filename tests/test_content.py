@@ -343,6 +343,43 @@ async def test_multipart_data_and_files_content():
 
 
 @pytest.mark.asyncio
+async def test_multipart_data_and_no_files_content():
+    data = {"message": "Hello, world!"}
+    files = None
+    headers = {"Content-Type": "multipart/form-data; boundary=+++"}
+    request = httpx.Request(method, url, data=data, files=files, headers=headers)
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
+
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
+
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Content-Length": "210",
+        "Content-Type": "multipart/form-data; boundary=+++",
+    }
+    assert sync_content == b"".join(
+        [
+            b"--+++\r\n",
+            b'Content-Disposition: form-data; name="message"\r\n',
+            b"\r\n",
+            b"Hello, world!\r\n",
+            b"--+++--\r\n",
+        ]
+    )
+    assert async_content == b"".join(
+        [
+            b"--+++\r\n",
+            b'Content-Disposition: form-data; name="message"\r\n',
+            b"\r\n",
+            b"Hello, world!\r\n",
+            b"--+++--\r\n",
+        ]
+    )
+
+
+@pytest.mark.asyncio
 async def test_empty_request():
     request = httpx.Request(method, url, data={}, files={})
     assert isinstance(request.stream, typing.Iterable)

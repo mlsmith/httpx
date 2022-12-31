@@ -80,6 +80,40 @@ def test_multipart_explicit_boundary(header: str) -> None:
 @pytest.mark.parametrize(
     "header",
     [
+        "multipart/form-data; boundary=+++; charset=utf-8",
+        "multipart/form-data; charset=utf-8; boundary=+++",
+        "multipart/form-data; boundary=+++",
+        "multipart/form-data; boundary=+++ ;",
+        'multipart/form-data; boundary="+++"; charset=utf-8',
+        'multipart/form-data; charset=utf-8; boundary="+++"',
+        'multipart/form-data; boundary="+++"',
+        'multipart/form-data; boundary="+++" ;',
+    ],
+)
+def test_multipart_data_without_files_with_explicit_boundary(header: str) -> None:
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
+
+    data = {"text": "value"}
+    headers = {"content-type": header}
+    response = client.post("http://127.0.0.1:8000/", data=data, headers=headers)
+    boundary_bytes = b"+++"
+
+    assert response.status_code == 200
+    assert response.request.headers["Content-Type"] == header
+    assert response.content == b"".join(
+        [
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="text"\r\n',
+            b"\r\n",
+            b"value\r\n",
+            b"--" + boundary_bytes + b"--\r\n",
+        ]
+    )
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
         "multipart/form-data; charset=utf-8",
         "multipart/form-data; charset=utf-8; ",
     ],

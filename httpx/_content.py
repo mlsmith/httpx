@@ -151,7 +151,7 @@ def encode_urlencoded_data(
 
 
 def encode_multipart_data(
-    data: RequestData, files: RequestFiles, boundary: Optional[bytes]
+    data: RequestData, files: Optional[RequestFiles], boundary: Optional[bytes]
 ) -> Tuple[Dict[str, str], MultipartStream]:
     multipart = MultipartStream(data=data, files=files, boundary=boundary)
     headers = multipart.get_headers()
@@ -209,6 +209,8 @@ def encode_request(
         return encode_content(content)
     elif files:
         return encode_multipart_data(data or {}, files, boundary)
+    elif data and boundary:
+        return encode_multipart_data(data, None, boundary)
     elif data:
         return encode_urlencoded_data(data)
     elif json is not None:

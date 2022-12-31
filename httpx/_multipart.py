@@ -196,7 +196,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
     def __init__(
         self,
         data: RequestData,
-        files: RequestFiles,
+        files: typing.Optional[RequestFiles] = None,
         boundary: typing.Optional[bytes] = None,
     ) -> None:
         if boundary is None:
@@ -209,7 +209,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
         self.fields = list(self._iter_fields(data, files))
 
     def _iter_fields(
-        self, data: RequestData, files: RequestFiles
+        self, data: RequestData, files: typing.Optional[RequestFiles]
     ) -> typing.Iterator[typing.Union[FileField, DataField]]:
         for name, value in data.items():
             if isinstance(value, (tuple, list)):
@@ -217,6 +217,9 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
                     yield DataField(name=name, value=item)
             else:
                 yield DataField(name=name, value=value)
+
+        if files is None:
+            return
 
         file_items = files.items() if isinstance(files, typing.Mapping) else files
         for name, value in file_items:
